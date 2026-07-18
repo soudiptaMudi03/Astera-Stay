@@ -1,18 +1,42 @@
-mapboxgl.accessToken = mapToken;
+//making coordinate string to number array
+function stringToNum(coordinates) {
+    let numbers = coordinates.replace('[', '').replace(']', '').split(',');
+    let num1 = parseFloat(numbers[0]);
+    let num2 = parseFloat(numbers[1]);
+    return [num1, num2];
+}
+let coord = stringToNum(coordinates);
 
-const map = new mapboxgl.Map({
-  container: "map", // container ID
-  // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
-  style: "mapbox://styles/mapbox/streets-v12", // style URL
-  center: listing.geometry.coordinates, // starting position [lng, lat]. Note that lat must be set between -90 and 90
-  zoom: 9, // starting zoom
+//creating map using maptiler
+maptilersdk.config.apiKey = mapToken;
+const map = new maptilersdk.Map({
+    container: 'map', // container's id or the HTML element to render the map
+    style: maptilersdk.MapStyle.STREETS,
+    center: coord, // starting position [lng, lat]
+    zoom: 14, // starting zoom
 });
 
-const marker1 = new mapboxgl.Marker({ color: "red" })
-  .setLngLat(listing.geometry.coordinates) //Listing.geometry.coordinates
-  .setPopup(
-    new mapboxgl.Popup({ offset: 25 }).setHTML(
-      `<h4>${listing.title}</h4><p>Exact Location will be provided after booking</p>`,
-    )
-  )
-  .addTo(map);
+
+//adding  marker to the map using maptiler
+const marker = new maptilersdk.Marker({
+    color: "#FF0000",
+    draggable: true
+}).setLngLat(coord)
+    .addTo(map);
+
+const markerHeight = 50, markerRadius = 10, linearOffset = 25;
+const popupOffsets = {
+    'top': [0, 0],
+    'top-left': [0,0],
+    'top-right': [0,0],
+    'bottom': [0, -markerHeight],
+    'bottom-left': [linearOffset, (markerHeight - markerRadius + linearOffset) * -1],
+    'bottom-right': [-linearOffset, (markerHeight - markerRadius + linearOffset) * -1],
+    'left': [markerRadius, (markerHeight - markerRadius) * -1],
+    'right': [-markerRadius, (markerHeight - markerRadius) * -1]
+};
+const popup = new maptilersdk.Popup({offset: popupOffsets, className: 'my-class'})
+.setLngLat(coord)
+.setHTML(`<p>Here your can stay</p>`)
+.setMaxWidth("600px")
+.addTo(map);

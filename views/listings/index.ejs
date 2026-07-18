@@ -1,128 +1,143 @@
-<% layout("/layouts/boilerplate") %>
-    <!-- <h3>All Listings</h3> -->
-    <!-- <form method="get" action="/listings/new">
-        <button>Create New Listing</button>
-    </form> -->
-    <style>
-        #filters {
-            margin-top: 1rem;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-        }
+<% layout("layouts/boilerplate")%>
 
-        .filter {
-            text-align: center;
-            margin-right: 2rem;
-            margin-top: 2rem;
+    <style>
+        .head{
+            display: flex;
+            justify-content: space-between;
+
+        }
+        .filters{
+            margin-top: 1rem;
+            display:flex;
+            justify-content: space-between;
+/*            flex-shrink: 1;*/
+/*            background-color: blue;*/
+        }
+        .filter{ 
+            text-align:center;
+            align-items: center;
+            margin: 0 1.5rem 0 0 ;
+            font-size: 1.3rem;
+/*            font-size: 20px;*/
             opacity: 0.7;
         }
-
-        .filter:hover {
+        .filter p{
+            font-size:0.9rem;
+/*            background-color:black;*/
+        }
+        .filter:hover{
             opacity: 1;
             cursor: pointer;
+            transform: scale(1.2);
         }
+        .gst{
+            display:flex;
+            align-items:center;
+/*            cursor:pointer;*/
 
-        .filter p {
-            font-size: 0.8rem;
         }
-
-        .tax-info {
-            display: none;
+        .gst_btn{
+            padding: 1rem 1.5rem 1rem 2rem;
+            padding-left: 16px;
+            border: 2px solid black;
+            border-radius: 25px;
+/*            cursor:pointer;*/
         }
-
-        .tax-toggle {
-            border: 1px solid black;
-            border-radius: 1rem;
-            height: 2.5rem;
-            padding: 1rem;
-            margin-left: 2rem;
-            display: flex;
-            align-items: center;
-
+        .gst_info{
+            display:none;
+        }
+        .form-check-input{
+            cursor: pointer;
         }
     </style>
-<div id="filters">
-    <div class="filter">
-        <div><i class="fa-solid fa-fire"></i></div>
-        <p>Trending</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-solid fa-bed"></i></div>
-        <p>Rooms</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-solid fa-mountain-city"></i></div>
-        <p>Iconic Cities</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-solid fa-mountain"></i></div>
-        <p>Mountains</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-brands fa-fort-awesome"></i></div>
-        <p>Castles</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-solid fa-person-swimming"></i></div>
-        <p>Amazing Pools</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-solid fa-campground"></i></div>
-        <p>Camping</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-solid fa-cow"></i></div>
-        <p>Farms</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-regular fa-snowflake"></i></div>
-        <p>Arctic</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-solid fa-igloo"></i></div>
-        <p>Domes</p>
-    </div>
-    <div class="filter">
-        <div><i class="fa-solid fa-ship"></i></div>
-        <p>Boats</p>
-    </div>
-    <div class="tax-toggle">
-        <div class="form-check-reverse form-switch">
-        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault">
-        <label class="form-check-label" for="flexSwitchCheckDefault">Display total after taxes</label>
+    <body>
+        <div class="head">
+            <div class="filters">
+                <div class="filter">
+                    <i class="fa-solid fa-fire"></i>
+                    <p>Trending</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-solid fa-bed"></i>
+                    <p>Rooms</p>
+                </div>
+                 <div class="filter">
+                   <i class="fa-solid fa-building"></i>
+                    <p>iconic citis</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-solid fa-mountain"></i>
+                    <p>Mountains</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-brands fa-fort-awesome"></i>
+                    <p>Castle</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-solid fa-person-swimming"></i>
+                    <p>Pools</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-solid fa-campground"></i>
+                    <p>Camps</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-solid fa-cow"></i>
+                    <p>Farms</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-solid fa-snowflake"></i>
+                    <p>Arctic</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-solid fa-landmark-dome"></i>
+                    <p>Domes</p>
+                </div>
+                 <div class="filter">
+                    <i class="fa-solid fa-ship"></i>
+                    <p>Boats</p>
+                </div>
+            </div>
+            <div class="gst">
+                <div class="gst_btn">
+                    <div class="form-check-reverse form-switch">
+                      <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault">
+                      <label class="form-check-label" for="flexSwitchCheckDefault">Display total after taxes</label>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-<div class="row row-cols-lg-3 row row-cols-md-2 row-cols-sm-1 mt-3">
-    <% for (let listing of allListings){ %>
-        <a href="/listings/<%= listing._id %>" class="listing-link">
-<div class="card col listing-card">
-  <img src="<%= listing.image.url %>" class="card-img-top" alt="listing_image" style="height: 20rem;">
-  <div class="card-img-overlay"></div>
-  <div class="card-body">
-    <p class="card-text">
-       <b><%= listing.title %></b><br/>
-   &#8377; <%= listing.price ? listing.price.toLocaleString("en-IN") : "Price N/A" %> / night
-   <i class="tax-info"> &nbsp; &nbsp;+ 18% GST</i>
-    </p>
-  </div>
-</div>
-</a>
- <% } %>
-</div>
+        <H3>These are all the avalible hotels</H3>
+        <!-- <form method="get" action="/listings/new"><button>create new listing</button></form> -->
 
-<script>
-    let taxSwitch=document.getElementById("flexSwitchCheckDefault");
-    taxSwitch.addEventListener("click",() => {
-        let taxInfo=document.getElementsByClassName("tax-info");
-        for(info of taxInfo){
-            if(info.style.display != "inline"){
-                info.style.display = "inline";
-            }
-            else{
-                info.style.display = "none";
-            }
-        }
-    });
-</script>
+        <div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1">
+            <% for(listing of listings) {%>
+                <a href="/listings/<%=listing._id%>" class="listing_links">
+                    <div class="card col listing-card">
+                        <img src="<%=listing.image.url%>" class="card-img-top" alt="listing image">
+                        <!-- card overlay to add clickable effect only on the pic not the whole div -->
+                        <div class="card-img-overlay"></div>
+                        <div class="card-body">
+                            <p class="card-text"><b><%=listing.title %></b><br> &#8377; <%=listing.price.toLocaleString("en-IN")%> / night <i class="gst_info">&nbsp +18% GST</i></p>
+                        </div>
+                    </div>
+                </a>
+            <% } %>
+        </div>
+
+        <script>
+            let gst_btn=document.querySelector("#flexSwitchCheckDefault");
+            // console.log(gst_btn);
+            let gst_infos=document.querySelectorAll(".gst_info");
+            gst_btn.addEventListener("click",()=>{
+                for(info of gst_infos){
+                    if(info.style.display!="inline"){
+                    info.style.display= "inline";
+                    }
+                    else{
+                        info.style.display="none";
+                    }
+                }
+            });
+        </script>
+    </body>
