@@ -5,6 +5,10 @@ const Listing = require("../models/listing.js");
 module.exports.saveReview= async(req,res)=>{
     //find litsting in which we want to add review
     let listing= await Listing.findById(req.params.id);
+    if(!listing){
+        req.flash("error","The listing doesn't exist");
+        return res.redirect("/listings");
+    }
     let newReview= new Review(req.body.review);// creattw new review from form data
 
     listing.reviews.push(newReview);//adding review to listing
@@ -12,7 +16,6 @@ module.exports.saveReview= async(req,res)=>{
     //saving review and updating the existing listing after adding new review
     await newReview.save();
     await listing.save();
-    console.log("review added");
     req.flash("success","New Review Added");  
     res.redirect(`/listings/${listing._id}`);
 };

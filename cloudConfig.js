@@ -14,8 +14,8 @@ cloudinary.config({
 const storage= new CloudinaryStorage({
     cloudinary: cloudinary,//iss cloudinary storage pe ssave krega
     params:{
-        folder:"WonderLust_DEV",
-        allowerdFormets:["png","jpg","jpeg"]
+        folder:"AsteraStay_DEV",
+        allowedFormats:["png","jpg","jpeg"]
     }
 });
 

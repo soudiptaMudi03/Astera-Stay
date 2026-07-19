@@ -12,23 +12,22 @@ module.exports.signupForm= (req,res)=>{
     res.render("users/signup.ejs");
 };
 
-module.exports.saveSignupDetails = async(req,res)=>{
+module.exports.saveSignupDetails = async(req,res,next)=>{
     try{
         let{username,email,password}=req.body;
         const newUser=new User({username,email});
         let registeredUser=await User.register(newUser,password);
-        console.log(registeredUser);
         //auto login after signup
-        req.login(registeredUser,((err)=>{
+        req.login(registeredUser,(err)=>{
             if(err){
-                next(err);
+                return next(err);
             }
-            req.flash("success","Welcome to WanderLust");
+            req.flash("success","Welcome to Astera Stay");
             res.redirect("/listings");
-        }));
+        });
     }
     catch(err){
-        req.flash("error","Username already taken");
+        req.flash("error", err.message || "Username already taken");
         res.redirect("/signup");
     }
 };

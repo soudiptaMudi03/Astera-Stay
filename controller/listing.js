@@ -1,151 +1,109 @@
-const Listing=require("../models/listing.js");
-//using map while listing addition
-// import * as maptilersdk from '@maptiler/sdk';
-// const maptilersdk = require('@maptiler/sdk').catch((e)=>{
-//     console.log(e);
-// });
-// const maptilersdk = require('@maptiler/sdk/dist/index.js'); 
-const axios = require('axios');
-let mapToken= process.env.MAP_TOKEN;
-// maptilersdk.config.apiKey = mapToken;
+const Listing = require("../models/listing.js");
+const ExpressError = require("../utils/ExpressError.js");
+const axios = require("axios");
+let mapToken = process.env.MAP_TOKEN;
 
-module.exports.showIndex= async(req,res)=>{
-    const listings=  await Listing.find();
-    // console.log(listings);
-    res.render("Listings/index.ejs",{listings});
+module.exports.showIndex = async (req, res) => {
+    const listings = await Listing.find();
+    res.render("Listings/index.ejs", { listings });
 };
 
-
-module.exports.serveNewForm= (req,res)=>{ //before rendering the new form we have to check or user is logged in or authenticated for current session or not using req.user maintained by passport
+module.exports.serveNewForm = (req, res) => {
     res.render("Listings/new.ejs");
 };
 
-
-module.exports.saveNewListing= async(req,res,next)=>{ //using wrap async for handling our errors AND if validateListing is passed then only out next middle ware fn is executed or err will be thrown to the next error handling middlewares
-
-    //using maptiler api for converting place to cordinates
-    let placeName=req.body.listing.location+", "+req.body.listing.country;
-    console.log(placeName);
-    const mapUrl = `https://api.maptiler.com/geocoding/${placeName}.json?key=r1NiBUKVV6TlRkAdmDM7`;
-    const response = await axios.get(mapUrl);
-    // console.log(response.data.features[0].geometry);
-
-    if(!req.body.listing){ //to handle if any listing is not coming with req.body -> post req by hoppscotch with no body sent
-        next(new ExpressError(400,"Please send a valid listing"));
+module.exports.saveNewListing = async (req, res, next) => {
+    if (!req.body.listing) {
+        return next(new ExpressError(400, "Please send a valid listing"));
+    }
+    if (!req.file) {
+        return next(new ExpressError(400, "Please upload an image"));
     }
 
-    //USING SCHEMA VALIDATORS OF JOI MANUALLY
-    // const result= validSchema.validate(req.body);
-    // console.log(result);
-    // if(result.error){
-    //     throw (new ExpressError(400,result.error));
-    // }
+    //using maptiler api for converting place to coordinates
+    //NOTE: the API key here was previously hardcoded in this file and committed to git history.
+    //It has been switched to process.env.MAP_TOKEN - the old hardcoded key should be treated as
+    //leaked and rotated in the MapTiler dashboard regardless of this fix.
+    let placeName = req.body.listing.location + ", " + req.body.listing.country;
+    const mapUrl = `https://api.maptiler.com/geocoding/${encodeURIComponent(placeName)}.json?key=${mapToken}`;
 
-    // try{
-    //     const newListing= new Listing({...req.body.listing});
-    // await newListing.save() //isme error aane pe catch block me direct catch hoga
-    // // .then((res)=>{
-    // //     console.log("data added");
-    // // })
-    // // .catch((err)=>{
-    // //     console.log("error aya ",err);
-    // // })
-    // res.redirect("/listings");
-    // }
-    // catch(err){
-    //     next(err); //calling next error handler
-    // }
-    //OR
-    // const newListing= new Listing({...req.body.listing});
-    const newListing= new Listing(req.body.listing);
+    let geometry;
+    try {
+        const response = await axios.get(mapUrl);
+        const feature = response.data.features && response.data.features[0];
+        if (!feature) {
+            req.flash("error", "Could not locate that place. Please check the location/country.");
+            return res.redirect("/listings/new");
+        }
+        geometry = feature.geometry;
+    } catch (err) {
+        req.flash("error", "Location lookup failed. Please try again.");
+        return res.redirect("/listings/new");
+    }
 
-    //BULKEY WAY FOR CHECKING SCHEMA VALIDATION -> server validations  
-    // if(!newListing.desc)
-    //     next(new ExpressError(400,"Please send a valid desc"));
-    // if(!newListing.price)
-    //     next(new ExpressError(400,"Please send a valid price"));
-    // if(!newListing.location)
-    //     next(new ExpressError(400,"Please send a valid location"));
+    const newListing = new Listing(req.body.listing);
+    newListing.owner = req.user._id;
+    newListing.image = { url: req.file.path, filename: req.file.filename };
+    newListing.geometry = geometry;
 
-    //save owner of the created listing
-    newListing.owner=req.user._id; //uses passport
+    await newListing.save();
 
-    //NEW IMAGE LINK SAVE IN MONGO
-    let url=req.file.path; //req.file se image ka detaile nikalo
-    let filename=req.file.filename;
-    newListing.image={url,filename}; //save se phle inage field me woh fill krdo
-    newListing.geometry=response.data.features[0].geometry;
-    let savedListing=await newListing.save() //isme error aane pe catch block me direct catch hoga
-    // console.log(savedListing);
-    // .then((res)=>{
-    //     console.log("data added");
-    // })
-    // .catch((err)=>{
-    //     console.log("error aya ",err);
-    // })
-
-    //create a flash message
-    req.flash("success","New Listing Created");  
-    
+    req.flash("success", "New Listing Created");
     res.redirect("/listings");
-}
-
-
-module.exports.showListing= async(req,res)=>{
-    let {id}= req.params;
-    const listing= await Listing.findById(id).populate("reviews").populate("owner");//we use populate so that we got all the reviews of the listing with details
-    //if the requested listing is not present then an error flash is created
-    if(!listing){
-        req.flash("error","The listing doesn't exist");
-        res.redirect("/listings"); //and we are redirected to our index route directly on wrong route request
-    }
-    console.log(listing);
-    res.render("Listings/show.ejs",{listing});
 };
 
+module.exports.showListing = async (req, res) => {
+    let { id } = req.params;
+    const listing = await Listing.findById(id).populate({ path: "reviews" }).populate("owner");
+    if (!listing) {
+        req.flash("error", "The listing doesn't exist");
+        return res.redirect("/listings");
+    }
+    res.render("Listings/show.ejs", { listing });
+};
 
-module.exports.serveEditForm= async(req,res)=>{
-    let {id}= req.params;
-    const listing= await Listing.findById(id);
-    if(!listing){
-        req.flash("error","The listing doesn't exist");
-        res.redirect("/listings");
+module.exports.serveEditForm = async (req, res) => {
+    let { id } = req.params;
+    const listing = await Listing.findById(id);
+    if (!listing) {
+        req.flash("error", "The listing doesn't exist");
+        return res.redirect("/listings");
     }
 
     //COMPRESSING THE IMAGE FOR PREVIEWING USING CLOUDINARY API
-    let originalImageUrl= listing.image.url;
-    let compressedImageUrl= originalImageUrl.replace("/upload","/upload/w_300")
-    // console.log(compressedImageUrl);
-    res.render("Listings/edit.ejs",{listing,compressedImageUrl});
+    let originalImageUrl = listing.image.url;
+    let compressedImageUrl = originalImageUrl.replace("/upload", "/upload/w_300");
+    res.render("Listings/edit.ejs", { listing, compressedImageUrl });
 };
 
-
-module.exports.saveEditListing= async(req,res)=>{
-    if(!req.body.listing){
-        next(new ExpressError(400,"Please send a valid listing"));
+module.exports.saveEditListing = async (req, res, next) => {
+    if (!req.body.listing) {
+        return next(new ExpressError(400, "Please send a valid listing"));
     }
-    const{id}=req.params;
-    //getting data obj of form from req body
-    const listing=req.body.listing;
-    console.log(listing);
-    const updatedListing=await Listing.findByIdAndUpdate(id,{...listing});
-    //setting image url on updation if new file is uploaded
-    if(req.file){
-        let url= req.file.path;
-        let filename= req.file.filename;
-        updatedListing.image={url,filename};
-        updatedListing.save();
+    const { id } = req.params;
+    const listing = req.body.listing;
+
+    //{new:true} is required so we get back the UPDATED document, not the pre-update one.
+    //Previously the pre-update doc was returned, then had .image set + .save() called on it,
+    //which could overwrite the just-applied text field updates with stale values.
+    const updatedListing = await Listing.findByIdAndUpdate(id, { ...listing }, { new: true, runValidators: true });
+    if (!updatedListing) {
+        req.flash("error", "The listing doesn't exist");
+        return res.redirect("/listings");
     }
 
-    req.flash("success","Listing Updated");  
+    if (req.file) {
+        updatedListing.image = { url: req.file.path, filename: req.file.filename };
+        await updatedListing.save();
+    }
+
+    req.flash("success", "Listing Updated");
     res.redirect(`/listings/${id}`);
 };
 
-
-module.exports.destroyListing= async(req,res)=>{
-    const {id}=req.params;
-    let deletedListing= await Listing.findByIdAndDelete(id);
-    console.log(deletedListing);
-    req.flash("success","Listing Deleted");  
+module.exports.destroyListing = async (req, res) => {
+    const { id } = req.params;
+    await Listing.findByIdAndDelete(id);
+    req.flash("success", "Listing Deleted");
     res.redirect("/listings");
 };

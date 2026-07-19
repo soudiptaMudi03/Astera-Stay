@@ -1,31 +1,46 @@
 //requiring all the needed modules
-const express=require("express");
-const app= express();
-const mongoose=require("mongoose");
-const Listing=require("../models/listing.js");
-const data=require("./data.js");
-
-
-//connecting to our DB
-let mongoURL="mongodb://127.0.0.1:27017/wonderlust";
-async function main(){
-    await mongoose.connect(mongoURL);
+if (process.env.NODE_ENV != "production") {
+    require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
 }
-main()
-.then((res)=>{
-    console.log("Database is connected succesfully");
-})
-.catch((err)=>{
-    console.log("Error aya: ",err);
-});
+const mongoose = require("mongoose");
+const Listing = require("../models/listing.js");
+const data = require("./data.js");
 
-const insertListings= async ()=>{
+//connecting to the same DB the app uses (ATLAS_URL from .env), not a hardcoded local Mongo URL
+const atlasURL = process.env.ATLAS_URL;
+
+async function main() {
+    if (!atlasURL) {
+        throw new Error("ATLAS_URL is not set. Add it to your .env file before running the seed script.");
+    }
+    await mongoose.connect(atlasURL);
+}
+
+const insertListings = async () => {
     await Listing.deleteMany({});
-    //adding owner for each listing
-    data.listings=data.listings.map((listing)=>({...listing,owner:"65b0b7979a12b3da7c802baf"}));
-    await Listing.insertMany(data.listings);
-    console.log("Data has initilized")
-}
+    //adding owner + a placeholder geometry for each listing (the schema requires geometry;
+    //the raw seed data in data.js has no coordinates, so inserting it as-is fails validation).
+    //Replace OWNER_ID below with a real User _id from your database before seeding.
+    const OWNER_ID = process.env.SEED_OWNER_ID || "65b0b7979a12b3da7c802baf";
+    const listingsWithMeta = data.listings.map((listing) => ({
+        ...listing,
+        owner: OWNER_ID,
+        geometry: {
+            type: "Point",
+            coordinates: [77.209, 28.6139], // placeholder coordinates; update per-listing as needed
+        },
+    }));
+    await Listing.insertMany(listingsWithMeta);
+    console.log(`Seeded ${listingsWithMeta.length} listings`);
+};
 
-insertListings();
-
+main()
+    .then(() => insertListings())
+    .then(() => {
+        console.log("Data has initialized");
+        return mongoose.connection.close();
+    })
+    .catch((err) => {
+        console.error("Seeding failed: ", err);
+        process.exit(1);
+    });

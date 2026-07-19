@@ -33,7 +33,7 @@
                 <h3>Here is the detailed view of your listing:</h3>
             </div>
             <div class="card col-6 offset-3 listing-card">
-                <i>Owned By - <b><%=listing.owner.username %></b></i>
+                <i>Owned By - <b><%= listing.owner ? listing.owner.username : "Unknown" %></b></i>
                 <img src="<%=listing.image.url%>" class="card-img-top" alt="listing image">
                 <div class="card-body mt-3">
                     <p class="card-text">
@@ -50,10 +50,11 @@
 
             <div class="show_btns">
                 <a href="/listings" class="btn btn-dark offset-3 col-1">back</a><br><br>
+                <% if(currUser && listing.owner && listing.owner._id.equals(currUser._id)) { %>
                 <a href="/listings/<%=listing._id%>/edit" class="btn btn-success edit_btn col-1 offset-3 ">Edit</a><br><br>
                 <form method="post" action="/listings/<%=listing._id%>?_method=DELETE" ><button class="btn btn-dark dlt_btn">delete</button>
                 </form>
-            </div>
+                <% } %>
             <div class="booking">
                 <a class="plan" href="/book" class="btn">BOOK &nbsp;NOW</a>
             </div>
